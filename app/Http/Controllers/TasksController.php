@@ -13,13 +13,23 @@ class TasksController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+     
     public function index()
     {
-        $tasks = Task::all();
-
-        return view('tasks.index', [
-            'tasks' => $tasks,
-        ]);
+        $data = [];
+        if (\Auth::check()) {
+            $user = \Auth::user();
+            $tasks = $user->tasks()->get();
+            
+            $data = [
+                'user' => $user,
+                'tasks' => $tasks
+                ];
+        return view('tasks.index', $data);
+        }
+    else {
+         return view('welcome');
+        }
     }
 
     /**
@@ -48,8 +58,10 @@ class TasksController extends Controller
             'status' => 'required|max:10',
             'content' => 'required|max:191',
         ]);
+        
         $task = new Task;
-        $task->status = $request->status;
+        $task->user_id = \Auth::id(); 
+        $task->status  = $request->status;
         $task->content = $request->content;
         $task->save();
 
@@ -65,10 +77,13 @@ class TasksController extends Controller
     public function show($id)
     {
         $task = Task::find($id);
-
-        return view('tasks.show', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.show', [
+                'task' => $task,
+            ]);
+        }else {
+            return redirect('/');
+        }
     }
 
     /**
@@ -80,10 +95,14 @@ class TasksController extends Controller
     public function edit($id)
     {
         $task = Task::find($id);
-
-        return view('tasks.edit', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.edit', [
+                'task' => $task,
+                ]);
+        }else {
+            return redirect('/');
+        }
+                 
     }
 
     /**
@@ -99,14 +118,17 @@ class TasksController extends Controller
             'status' => 'required|max:10',
             'content' => 'required|max:191',
         ]);
-         $task = Task::find($id);
-         $task->status = $request->status;
+        $task = Task::find($id);
+        if (\Auth::id() === $task->user_id) {
+        $task->status = $request->status;
         $task->content = $request->content;
         $task->save();
-
+        }
+        else {
         return redirect('/');
+        }
     }
-
+    
     /**
      * Remove the specified resource from storage.
      *
